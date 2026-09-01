@@ -26,7 +26,7 @@
     "test:browser-operator": "node --test test/browser-household-parity.mjs",
     "test:public-registration": "node test/public-registration-allowlist.mjs",
     "test:diagnostics": "node test/recent-call-diagnostics.mjs && node test/recent-call-http.mjs && node test/doctor-health.mjs",
-    "test": "node test/release-identity.mjs && node test/lifecycle-contract.mjs && node test/installer-lifecycle-windows.mjs && node test/bootstrap-archive-policy.mjs && node test/bootstrap-persistence.mjs && node test/codex-version-gate.mjs && node test/browser-runtime-compat.mjs && node test/public-runtime-browser-guardrails.mjs && node test/stock-prompt-input-catalog.mjs && node test/recent-call-diagnostics.mjs && node test/recent-call-http.mjs && node test/doctor-health.mjs && node test/metered-consent.mjs && node test/agent-consent-card.mjs && node test/reasoning-effort.mjs && node test/public-command-policy.mjs && node test/public-registration-allowlist.mjs && node test/public-browser-adapter.mjs && node --test test/browser-household-parity.mjs && node test/public-contract.mjs",
+    "test": "node test/release-identity.mjs && node test/lifecycle-contract.mjs && node test/installer-lifecycle-windows.mjs && node test/bootstrap-archive-policy.mjs && node test/bootstrap-persistence.mjs && node test/codex-version-gate.mjs && node test/browser-runtime-compat.mjs && node test/public-runtime-browser-guardrails.mjs && node test/stock-prompt-input-catalog.mjs && node test/recent-call-diagnostics.mjs && node test/recent-call-http.mjs && node test/doctor-health.mjs && node test/metered-consent.mjs && node test/agent-consent-card.mjs && node test/reasoning-effort.mjs && node test/public-command-policy.mjs && node test/public-registration-allowlist.mjs && node test/public-browser-adapter.mjs && node --test test/browser-household-parity.mjs && node test/public-contract.mjs && node --test test/codex-skill-sync.mjs test/gemini-supervisor-skill.mjs test/public-skill-refresh.mjs",
     "release:manifest": "node scripts/generate-release-manifest.mjs",
     "bootstrap:materialize": "node scripts/materialize-bootstrap.mjs",
     "test:release-identity": "node test/release-identity.mjs",
@@ -38,8 +38,11 @@
     "compatibility:report": "node scripts/compatibility-report.mjs",
     "skills:check": "node scripts/sync-codex-skills.mjs check",
     "skills:sync": "node scripts/sync-codex-skills.mjs sync",
+    "skills:check:gemini": "node scripts/sync-codex-skills.mjs check --skill codexless-gemini-supervisor",
+    "skills:sync:gemini": "node scripts/sync-codex-skills.mjs sync --skill codexless-gemini-supervisor",
     "test:compatibility": "node --test test/upstream-compatibility-fingerprint.mjs",
     "test:skills": "node --test test/codex-skill-sync.mjs test/public-skill-refresh.mjs",
+    "test:gemini-skill": "node --test test/gemini-supervisor-skill.mjs",
     "release:preflight": "node scripts/release-preflight.mjs"
   },
   "dependencies": {
