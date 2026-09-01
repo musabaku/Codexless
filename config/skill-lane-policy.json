@@ -5,6 +5,10 @@
     "codexless-browser-repair": {
       "target": "existing",
       "reason": "Browser Repair follows the Existing Codex/Chrome Skill runtime and must never be copied into Managed CODEX_HOME by default."
+    },
+    "codexless-gemini-supervisor": {
+      "target": "existing",
+      "reason": "Gemini supervision governs the user's Existing Gemini/Antigravity transport and must not be copied into the isolated Managed CODEX_HOME by default."
     }
   },
   "privateExistingSkillSyncToManaged": "disabled-by-default",
