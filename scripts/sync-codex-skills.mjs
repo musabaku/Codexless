@@ -1,22 +1,25 @@
 import path from "node:path";
 import process from "node:process";
 import {
-  checkBrowserRepairSkill,
+  checkManagedSkill,
+  CODEXLESS_BROWSER_REPAIR_SKILL,
+  CODEXLESS_GEMINI_SUPERVISOR_SKILL,
+  CODEXLESS_PRODUCT_OWNED_SKILLS,
   CodexSkillSyncError,
-  finalizeBrowserRepairSkillSync,
-  prepareBrowserRepairSkillSync,
-  rollbackBrowserRepairSkillSync,
-  syncBrowserRepairSkill,
+  finalizeManagedSkillSync,
+  prepareManagedSkillSync,
+  rollbackManagedSkillSync,
+  syncManagedSkill,
 } from "../src/codex-skill-sync.mjs";
 
 const options = parseArgs(process.argv.slice(2));
 try {
   let result;
-  if (options.command === "check") result = checkBrowserRepairSkill(options);
-  else if (options.command === "sync") result = syncBrowserRepairSkill(options);
-  else if (options.command === "prepare") result = prepareBrowserRepairSkillSync(options);
-  else if (options.command === "finalize") result = finalizeBrowserRepairSkillSync(options);
-  else result = rollbackBrowserRepairSkillSync(options);
+  if (options.command === "check") result = checkManagedSkill(options);
+  else if (options.command === "sync") result = syncManagedSkill(options);
+  else if (options.command === "prepare") result = prepareManagedSkillSync(options);
+  else if (options.command === "finalize") result = finalizeManagedSkillSync(options);
+  else result = rollbackManagedSkillSync(options);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (options.command === "check" && result.action === "blocked") process.exitCode = 2;
 } catch (error) {
@@ -30,7 +33,7 @@ try {
 function parseArgs(argv) {
   const command = argv[0] && !argv[0].startsWith("-") ? argv[0] : "check";
   if (!new Set(["check", "sync", "prepare", "finalize", "rollback"]).has(command)) usageError("command must be check, sync, prepare, finalize, or rollback");
-  const parsed = { command, targetLane: "existing" };
+  const parsed = { command, targetLane: "existing", skill: CODEXLESS_BROWSER_REPAIR_SKILL };
   const rest = argv[0] === command ? argv.slice(1) : argv;
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
@@ -43,6 +46,11 @@ function parseArgs(argv) {
       const value = rest[index + 1];
       if (!value) usageError("--target-lane requires existing");
       parsed.targetLane = value.toLowerCase();
+      index += 1;
+    } else if (arg === "--skill") {
+      const value = rest[index + 1];
+      if (!value) usageError("--skill requires a Codexless-owned Skill name");
+      parsed.skill = value;
       index += 1;
     } else if (arg === "--source-dir") {
       const value = rest[index + 1];
@@ -57,18 +65,24 @@ function parseArgs(argv) {
     } else if (arg === "-h" || arg === "--help") {
       process.stdout.write([
         "Usage:",
-        "  node scripts/sync-codex-skills.mjs check|sync|prepare [--target-lane existing] [--codex-home <path>] [--source-dir <path>]",
-        "  node scripts/sync-codex-skills.mjs finalize|rollback --transaction-id <id> [--codex-home <path>]",
+        "  node scripts/sync-codex-skills.mjs check|sync|prepare [--skill <name>] [--target-lane existing] [--codex-home <path>] [--source-dir <path>]",
+        "  node scripts/sync-codex-skills.mjs finalize|rollback [--skill <name>] --transaction-id <id> [--codex-home <path>]",
         "",
-        "Only the Codexless-owned codexless-browser-repair Skill is managed, and its target lane is Existing only.",
+        `Supported product-owned Skills: ${CODEXLESS_PRODUCT_OWNED_SKILLS.join(", ")}`,
+        `Default for backward compatibility: ${CODEXLESS_BROWSER_REPAIR_SKILL}`,
+        `Gemini governance Skill: ${CODEXLESS_GEMINI_SUPERVISOR_SKILL}`,
+        "Targets are Existing only; Managed/Both are forbidden for these Skills.",
         "A same-name target without a valid Codexless ownership marker is never overwritten.",
-        "prepare/finalize/rollback are the installer transaction hooks; sync is prepare+finalize for ordinary manual use.",
+        "prepare/finalize/rollback are installer transaction hooks; sync is prepare+finalize for ordinary manual use.",
         "",
       ].join("\n"));
       process.exit(0);
     } else usageError(`unknown argument: ${arg}`);
   }
-  if (parsed.targetLane !== "existing") usageError("Browser Repair target lane must be existing; Managed/Both are forbidden for this Skill");
+  if (!CODEXLESS_PRODUCT_OWNED_SKILLS.includes(parsed.skill)) {
+    usageError(`Unsupported Skill: ${parsed.skill}. Expected one of: ${CODEXLESS_PRODUCT_OWNED_SKILLS.join(", ")}`);
+  }
+  if (parsed.targetLane !== "existing") usageError("Codexless-owned Skills currently target Existing only; Managed/Both are forbidden");
   if (new Set(["finalize", "rollback"]).has(command) && !parsed.transactionId) usageError(`${command} requires --transaction-id`);
   return parsed;
 }
