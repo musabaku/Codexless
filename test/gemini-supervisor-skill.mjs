@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
@@ -35,6 +36,14 @@ function withFixture(fn) {
 
 function targetDir(codexHome) {
   return path.join(codexHome, "skills", CODEXLESS_GEMINI_SUPERVISOR_SKILL);
+}
+
+function runSkillCli(args) {
+  const result = spawnSync(process.execPath, [new URL("../scripts/sync-codex-skills.mjs", import.meta.url).pathname, ...args], {
+    encoding: "utf8",
+    windowsHide: true,
+  });
+  return { ...result, json: result.stdout.trim() ? JSON.parse(result.stdout) : null };
 }
 
 test("Gemini supervisor is Existing-specific and refuses the Managed home", () => {
@@ -94,6 +103,46 @@ test("same-name user-owned Gemini supervisor is never overwritten", () => {
     );
     assert.equal(readFileSync(path.join(target, "SKILL.md"), "utf8"), "user-owned supervisor\n");
     assert.equal(existsSync(path.join(target, CODEXLESS_MANAGED_SKILL_MARKER)), false);
+  });
+});
+
+test("locally edited managed Gemini supervisor fails closed as drift", () => {
+  withFixture(({ codexHome, sourceDir }) => {
+    syncGeminiSupervisorSkill({ codexHome, sourceDir });
+    const installedSkill = path.join(targetDir(codexHome), "SKILL.md");
+    writeFileSync(installedSkill, `${readFileSync(installedSkill, "utf8")}\nlocal edit\n`, "utf8");
+
+    const check = checkGeminiSupervisorSkill({ codexHome, sourceDir });
+    assert.equal(check.status, "drifted");
+    assert.equal(check.action, "blocked");
+    assert.equal(check.reason, "managed-skill-content-changed-outside-sync");
+    assert.throws(
+      () => syncGeminiSupervisorSkill({ codexHome, sourceDir }),
+      (error) => error instanceof CodexSkillSyncError && error.code === "CODEXLESS_SKILL_TARGET_CONFLICT"
+    );
+  });
+});
+
+test("Gemini supervisor CLI supports check -> sync -> check without changing the legacy default Skill", () => {
+  withFixture(({ codexHome }) => {
+    const before = runSkillCli(["check", "--skill", CODEXLESS_GEMINI_SUPERVISOR_SKILL, "--codex-home", codexHome]);
+    assert.equal(before.status, 0);
+    assert.equal(before.json.skill, CODEXLESS_GEMINI_SUPERVISOR_SKILL);
+    assert.equal(before.json.status, "missing");
+
+    const sync = runSkillCli(["sync", "--skill", CODEXLESS_GEMINI_SUPERVISOR_SKILL, "--codex-home", codexHome]);
+    assert.equal(sync.status, 0);
+    assert.equal(sync.json.skill, CODEXLESS_GEMINI_SUPERVISOR_SKILL);
+    assert.equal(sync.json.status, "current");
+    assert.equal(sync.json.transactionStatus, "finalized");
+
+    const after = runSkillCli(["check", "--skill", CODEXLESS_GEMINI_SUPERVISOR_SKILL, "--codex-home", codexHome]);
+    assert.equal(after.status, 0);
+    assert.equal(after.json.status, "current");
+
+    const legacyDefault = runSkillCli(["check", "--codex-home", codexHome]);
+    assert.equal(legacyDefault.status, 0);
+    assert.equal(legacyDefault.json.skill, "codexless-browser-repair");
   });
 });
 
