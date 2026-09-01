@@ -41,7 +41,8 @@
     "skills:check:gemini": "node scripts/sync-codex-skills.mjs check --skill codexless-gemini-supervisor",
     "skills:sync:gemini": "node scripts/sync-codex-skills.mjs sync --skill codexless-gemini-supervisor",
     "test:compatibility": "node --test test/upstream-compatibility-fingerprint.mjs",
-    "test:skills": "node --test test/codex-skill-sync.mjs test/gemini-supervisor-skill.mjs test/public-skill-refresh.mjs",
+    "test:skills": "node --test test/codex-skill-sync.mjs test/public-skill-refresh.mjs",
+    "test:gemini-skill": "node --test test/gemini-supervisor-skill.mjs",
     "release:preflight": "node scripts/release-preflight.mjs"
   },
   "dependencies": {
